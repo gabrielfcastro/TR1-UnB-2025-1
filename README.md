@@ -1,1 +1,3 @@
-# TR1-UnB-2025-1
+# Teleinformática de Redes 1 2025/1 / Universidade de Brasília.
+
+Este repositório contém o projeto final da disciplina de Teleinformática de Redes 1 (2025/1) da Universidade de Brasília. Desenvolvido pelos alunos Gabriel Francisco (Matrícula: 20/2066571) e Henrique Givisiez (Matrícula: 21/1027563).
