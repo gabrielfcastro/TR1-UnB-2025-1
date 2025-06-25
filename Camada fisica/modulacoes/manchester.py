@@ -1,5 +1,5 @@
 # Codigo feito por Henrique Givisiez dos Santos de matricula 211027563
-from modulador_digital import ModuladorDigital
+from modulador import ModuladorDigital
 
 class Manchester(ModuladorDigital):
     """

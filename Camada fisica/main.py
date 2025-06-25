@@ -1,8 +1,7 @@
 # Codigo feito por Henrique Givisiez dos Santos de matricula 211027563
-
-from modulador_digital import CamadaFisica
-from modulacoes.nrz_polar import NRZPolar
 from modulacoes.manchester import Manchester
+from modulador import CamadaFisicaDigital
+from modulacoes.nrz_polar import NRZPolar
 from modulacoes.bipolar import Bipolar
 
 if __name__ == "__main__":
@@ -11,7 +10,7 @@ if __name__ == "__main__":
     # Teste da camada fisica com a modulacao NRZ Polar
 
     print("############ Teste NRZ Polar ############")
-    nrz_polar = CamadaFisica(NRZPolar())
+    nrz_polar = CamadaFisicaDigital(NRZPolar())
 
     sinais = nrz_polar.transmitir(bits)
     print("Sinais modulados:", sinais)
@@ -22,7 +21,7 @@ if __name__ == "__main__":
     # Teste da camada fisica com a modulacao Manchester
 
     print("############ Teste Manchester ############")
-    manchester = CamadaFisica(Manchester())
+    manchester = CamadaFisicaDigital(Manchester())
 
     sinais = manchester.transmitir(bits)
     print("Sinais modulados:", sinais)
@@ -33,7 +32,7 @@ if __name__ == "__main__":
     # Teste da camada fisica com a modulacao Bipolar
 
     print("############ Teste Bipolar ############")
-    bipolar = CamadaFisica(Bipolar())
+    bipolar = CamadaFisicaDigital(Bipolar())
 
     sinais = bipolar.transmitir(bits)
 
