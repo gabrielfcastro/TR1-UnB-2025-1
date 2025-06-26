@@ -1,8 +1,8 @@
 # Codigo feito por Gabriel Francisco de Oliveira Castro de matricula 202066571
-from modulador import ModuladorPorPortadora
+from modulador import Modulador
 import numpy as np
 
-class QAM(ModuladorPorPortadora):
+class QAM(Modulador):
     """
     QAM significa Modulação em Amplitude em Quadratura (combina modulação em amplitude com
     modulação em fase)
@@ -24,7 +24,6 @@ class QAM(ModuladorPorPortadora):
         amostras_por_bit = 200
         freq_portadora = 5.0
         tempo = np.linspace(0, 1, amostras_por_bit, endpoint = False)
-        portadora = np.cos(2 * np.pi* freq_portadora * tempo)
         ################################################################
         sinal_modulado = []
         mapa_8qam = {

@@ -1,7 +1,7 @@
 # Codigo feito por Henrique Givisiez dos Santos de matricula 211027563
-from modulador import ModuladorDigital
+from modulador import Modulador
 
-class Manchester(ModuladorDigital):
+class Manchester(Modulador):
     """
     A codificacao Manchester utiliza uma funcao booleana exclusiva OR (XOR) para combinar os sinais de clock eh dados em um unico fluxo de bits. 
     Cada periodo de bit reflete a transicao de um nivel de tensao para outro. 

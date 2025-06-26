@@ -1,8 +1,8 @@
 # Codigo feito por Gabriel Francisco de Oliveira Castro de matricula 202066571
-from modulador import ModuladorPorPortadora
+from modulador import Modulador
 import numpy as np
 
-class ASK(ModuladorPorPortadora):
+class ASK(Modulador):
     """
     Modulação por Chaveamento de Amplitude, a amplitude do sinal da portadora para
     criar elementos de sinal

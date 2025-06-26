@@ -4,50 +4,30 @@
 from abc import ABC, abstractmethod
 import numpy as np
 
-class ModuladorDigital(ABC):
+class Modulador(ABC):
     """
-    Classe pai base para as modulações digitais.
+    Classe pai base para as modulações digitais e por portadora.
 
     O decorator '@abstractmethod' forca as classes filhas a implementarem os metodos.
     """
 
     @abstractmethod
-    def modular(self, bits: list[int]) -> list[int]:
+    def modular(self, bits: list[int]) -> list[int] | np.ndarray:
         pass
 
     @abstractmethod
-    def demodular(self, sinais: list[int]) -> list[int]:
-        pass
-
-class ModuladorPorPortadora(ABC):
-    @abstractmethod
-    def modular(self, bits: list[int]) -> np.ndarray:
-        pass
-
-    @abstractmethod
-    def demodular(self, sinais: np.ndarray) -> list[int]:
+    def demodular(self, sinais: list[int] | np.ndarray) -> list[int]:
         pass
 
 
-class CamadaFisicaDigital:
+class CamadaFisica:
     """Gerencia a codificação e decodificação da camada física."""
 
-    def __init__(self, modulador: ModuladorDigital):
+    def __init__(self, modulador: Modulador):
         self.modulador = modulador
 
-    def transmitir(self, dados: list[int]) -> list[int]:
+    def transmitir(self, dados: list[int]) -> list[int] | np.ndarray:
         return self.modulador.modular(dados)
 
-    def receber(self, sinais: list[int]) -> list[int]:
-        return self.modulador.demodular(sinais)
-    
-class CamadaFisicaPorPortadora:
-
-    def __init__(self, modulador: ModuladorPorPortadora):
-        self.modulador = modulador
-
-    def transmitir(self, dados: list[int]) -> np.ndarray: 
-        return self.modulador.modular(dados)
-
-    def receber(self, sinais: np.ndarray) -> list[int]:
+    def receber(self, sinais: list[int] | np.ndarray) -> list[int]:
         return self.modulador.demodular(sinais)

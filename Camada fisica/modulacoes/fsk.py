@@ -1,8 +1,8 @@
 # Codigo feito por Gabriel Francisco de Oliveira Castro de matricula 202066571
-from modulador import ModuladorPorPortadora
+from modulador import Modulador
 import numpy as np
 
-class FSK(ModuladorPorPortadora):
+class FSK(Modulador):
     """
     Modulação por Chaveamento de Freqûencia. Consiste em fazer uma seleção de frequências
     entre dois sinais baseado no meu sinal modulante. Por exemplo, enquanto o sinal modudante
