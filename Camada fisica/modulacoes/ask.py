@@ -11,30 +11,32 @@ class ASK(Modulador):
     - Bit 1: Representado pela presença da onda portadora (alta amplitude).
     - Bit 0: Representado pela ausencia de onda portadaora (baixa amplitude).
     """
+    def __init__(self, freq_portadora: float, amostras_por_bit: int, limiar_de_energia: float = 0.1):
+        """
+            Inicializo o modulador ASK:
+            - freq_portadora    : Frequência da onda portadora em Hz.
+            - amostras_por_bit  : Número de amostras p/ representar cada bit.
+            - limiar_de_energia : Limiar para a tomada de decisão durante a modulação.
+        """
+        self.freq_portadora = freq_portadora
+        self.amostras_por_bit = amostras_por_bit
+        self.limiar_de_energia = limiar_de_energia
+
+        tempo = np.linspace(0, 1, amostras_por_bit, endpoint = False)
+        self.portadora = np.cos(2 * np.pi* freq_portadora * tempo)
+
     def modular(self, bits: list[int]) -> np.ndarray:
         """
         Converte uma sequência de bits em um sinal ASK. Para isso, "multiplica" a portadora
         pelo modulante digital
         """
-        ################################################################
-        # Vamos mudar isso aqui, p/ quando formos integrar tudo junto.
-        # Vai receber via terminal ?
-        # --- Geração da Onda Portadora (template) ---
-        # Cria um vetor de tempo para a duração de um bit
-        # Cria a onda portadora
-        amostras_por_bit = 200
-        freq_portadora = 5.0
-        tempo = np.linspace(0, 1, amostras_por_bit, endpoint = False)
-        portadora = np.cos(2 * np.pi* freq_portadora * tempo)
-        ################################################################
         sinal_modulado = []
         for bit in bits:
             if bit == 1:
                 amplitude = 1.0
-                sinal_modulado.extend(amplitude * portadora)
             else:
                 amplitude = 0
-                sinal_modulado.extend(amplitude * portadora)        
+            sinal_modulado.extend(amplitude * self.portadora)        
         
         return np.array(sinal_modulado)
     
@@ -46,17 +48,11 @@ class ASK(Modulador):
         - Dessa forma, calculamos a energia do trecho (soma dos quadrados das amostras) e compara com o limiar 
         p/ decidir qual o valor do bit. 
         """
-        ################################################################
-        # Vamos mudar isso aqui, p/ quando formos integrar tudo junto.
-        # Vai receber via terminal ?
-        amostras_por_bit = 200
-        limiar_de_energia = 0.1 
-        ################################################################
         bits_recuperados = []
-        for i in range(0, len(sinais),amostras_por_bit):
-            trecho = sinais[i:i + amostras_por_bit]
-            energia = np.sum(trecho**2)/amostras_por_bit
-            if energia > limiar_de_energia:
+        for i in range(0, len(sinais),self.amostras_por_bit):
+            trecho = sinais[i:i + self.amostras_por_bit]
+            energia = np.sum(trecho**2)/self.amostras_por_bit
+            if energia > self.limiar_de_energia:
                 bits_recuperados.append(1)
             else:
                 bits_recuperados.append(0)

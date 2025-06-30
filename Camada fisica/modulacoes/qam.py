@@ -1,96 +1,90 @@
-# Codigo feito por Gabriel Francisco de Oliveira Castro de matricula 202066571
 from modulador import Modulador
 import numpy as np
 
-class QAM(Modulador):
+class QAM8(Modulador):
     """
-    QAM significa Modulação em Amplitude em Quadratura (combina modulação em amplitude com
-    modulação em fase)
-    - 8QAM: Modulação Digital que transmite 3 bits por símbolo (2**3 = 8 simbolos diferentes)
+    Implementação otimizada de modulação e demodulação 8-QAM.
+    
+    Características:
+    - Modulação: Mapeia grupos de 3 bits em símbolos 8-QAM (Amplitude + Fase).
+    - Demodulação: Coerente I/Q com decisão por distância euclidiana mínima.
+    - Pré-computação de portadoras e constelação para eficiência.
+    
+    Parâmetros:
+    - freq_portadora: Frequência da portadora (Hz).
+    - amostras_por_simbolo: Número de amostras por símbolo (deve ser >= 8).
     """
+    def __init__(self, freq_portadora: float, amostras_por_simbolo: int):
+        if amostras_por_simbolo < 8:
+            raise ValueError("amostras_por_simbolo deve ser >= 8 para evitar aliasing.")
+        
+        self.freq_portadora = freq_portadora
+        self.amostras_por_simbolo = amostras_por_simbolo
+        
+        self._constelacao = {
+            0b000: (1.0, np.pi / 4),        # Símbolo 0
+            0b001: (1.0, 3 * np.pi / 4),    # Símbolo 1
+            0b010: (1.0, 5 * np.pi / 4),    # Símbolo 2
+            0b011: (1.0, 7 * np.pi / 4),    # Símbolo 3
+            0b100: (0.5, np.pi / 4),        # Símbolo 4
+            0b101: (0.5, 3 * np.pi / 4),    # Símbolo 5
+            0b110: (0.5, 5 * np.pi / 4),    # Símbolo 6
+            0b111: (0.5, 7 * np.pi / 4),    # Símbolo 7
+        }
+        
+        self._iq_ideal = {
+            simbolo: (amp * np.cos(fase), amp * np.sin(fase))
+            for simbolo, (amp, fase) in self._constelacao.items()
+        }
+        
+        self._tempo = np.linspace(0, 1, amostras_por_simbolo, endpoint=False)
+        self._portadora_i = np.cos(2 * np.pi * freq_portadora * self._tempo)
+        self._portadora_q = -np.sin(2 * np.pi * freq_portadora * self._tempo)
+    
+
     def modular(self, bits: list[int]) -> np.ndarray:
         """
-        Converte uma sequência de bits (multiplos de 3) em um sinal 8QAM. 
-        - Cada conjunto de 3 bits representam um símbolo com fase e amplitude diferentes.
+        Modula uma lista de bits (múltiplos de 3) em um sinal 8-QAM.
+        
+        Parâmetros:
+        - bits: Lista de bits (0 ou 1). Ex: [1, 0, 1, 0, 0, 0].
+        
+        Retorna:
+        - Sinal modulado em formato numpy.array.
+        
+        Lança:
+        - ValueError se o número de bits não for múltiplo de 3.
         """
         if len(bits) % 3 != 0:
-            raise ValueError("A quantidade de bits deve ser múltipla de 3.")
-        ################################################################
-        # Vamos mudar isso aqui, p/ quando formos integrar tudo junto.
-        # Vai receber via terminal ?
-        # --- Geração da Onda Portadora (template) ---
-        # Cria um vetor de tempo para a duração de um bit
-        # Cria a onda portadora
-        amostras_por_bit = 200
-        freq_portadora = 5.0
-        tempo = np.linspace(0, 1, amostras_por_bit, endpoint = False)
-        ################################################################
-        sinal_modulado = []
-        mapa_8qam = {
-            0: (1.0, 0),
-            1: (1.0, np.pi/2),
-            2: (1.0, np.pi),
-            3: (1.0, 3*np.pi/2),
-            4: (0.5, np.pi/4),
-            5: (0.5, 3*np.pi/4),
-            6: (0.5, 5*np.pi/4),
-            7: (0.5, 7*np.pi/4),
-        }
-        for i in range(0, len(bits),3):
-            grupo = bits[i:i+3]
-            b0, b1, b2 = grupo
-            simbolo = (b0 << 2) | (b1 <<1) | b2 # Converto meu grupo de 3 bits em um número de 0 a 7, sendo b0 o mais significativo
-            amplitude, fase = mapa_8qam[simbolo]
-            onda = amplitude * np.cos(2 * np.pi * freq_portadora * tempo + fase)
-            sinal_modulado.extend(onda)
-
-        return np.array(sinal_modulado)
+            raise ValueError("A quantidade de bits deve ser múltipla de 3 (8-QAM usa 3 bits/símbolo).")
+        
+        sinal_modulado = np.array([])
+        for i in range(0, len(bits), 3):
+            simbolo = (bits[i] << 2) | (bits[i+1] << 1) | bits[i+2]
+            amp, fase = self._constelacao[simbolo]
+            simbolo_modulado = amp * np.cos(2 * np.pi * self.freq_portadora * self._tempo + fase)
+            sinal_modulado = np.append(sinal_modulado, simbolo_modulado)
+        
+        return sinal_modulado
     
-    def demodular(self, sinais: np.ndarray) -> list[int]:
-        """
-        Recupero meu trem de bits a partir de um sinal 8QAM, usando a correlação com todos os
-        símbolos da constelação.
-        """
-        ################################################################
-        # --- Geração da Onda Portadora para correlação ---
-        # Vamos mudar isso aqui, p/ quando formos integrar tudo junto.
-        # Vai receber via terminal ?
-        amostras_por_simbolo = 200
-        freq_portadora = 5.0
-        tempo = np.linspace(0, 1, amostras_por_simbolo, endpoint=False)
-        ################################################################
+    def demodular(self, sinal: np.ndarray) -> list[int]:
+        """Demodula o sinal 8-QAM para bits."""
+        if len(sinal) % self.amostras_por_simbolo != 0:
+            raise ValueError("O comprimento do sinal deve ser múltiplo de amostras_por_simbolo.")
+
         bits_recuperados = []
-        mapa_8qam = {
-            0: (1.0, 0),
-            1: (1.0, np.pi/2),
-            2: (1.0, np.pi),
-            3: (1.0, 3*np.pi/2),
-            4: (0.5, np.pi/4),
-            5: (0.5, 3*np.pi/4),
-            6: (0.5, 5*np.pi/4),
-            7: (0.5, 7*np.pi/4),
-        }
-        referencias = {}
-        # Para cada símbolo da constelação gera a onde de referência com determinada amplitude e fase
-        for simb, (amp, fase) in mapa_8qam.items(): 
-            referencia = amp * np.cos(2 * np.pi * freq_portadora * tempo + fase)
-            referencias[simb] = referencia
-        for i in range(0, len(sinais), amostras_por_simbolo):
-            trecho = sinais[i:i + amostras_por_simbolo]
-            if len(trecho) < amostras_por_simbolo:
-                break  # ignora pedaços incompletos
-            melhor_correlacao = -np.inf # Usamos um valor inicial tão baixo que qualquer correlação é maior
-            simbolo_detectado = 0
-            for simb, ref in referencias.items(): # Comparo o trecho recebido com a onda de referência
-                correlacao = np.dot(trecho, ref)
-                if correlacao > melhor_correlacao:
-                    melhor_correlacao = correlacao
-                    simbolo_detectado = simb
-            b0 = (simbolo_detectado >> 2) & 1
-            b1 = (simbolo_detectado >> 1) & 1
-            b2 = simbolo_detectado & 1
-            bits_recuperados.extend([b0, b1, b2])
-
+        for i in range(0, len(sinal), self.amostras_por_simbolo):
+            trecho = sinal[i:i + self.amostras_por_simbolo]            
+            i_rx = (2 / self.amostras_por_simbolo) * np.sum(trecho * self._portadora_i)
+            q_rx = (2 / self.amostras_por_simbolo) * np.sum(trecho * self._portadora_q)
+            simbolo_detectado = min(
+                self._iq_ideal.keys(),
+                key=lambda s: (i_rx - self._iq_ideal[s][0])**2 + (q_rx - self._iq_ideal[s][1])**2
+            )
+            bits_recuperados.extend([
+                (simbolo_detectado >> 2) & 1,
+                (simbolo_detectado >> 1) & 1,
+                simbolo_detectado & 1
+            ])
+        
         return bits_recuperados
-
-
