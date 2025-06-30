@@ -1,7 +1,7 @@
 # Codigo feito por Henrique Givisiez dos Santos de matricula 211027563
-from modulador_digital import ModuladorDigital
+from modulador import Modulador
 
-class NRZPolar(ModuladorDigital):
+class NRZPolar(Modulador):
     """
     Em telecomunicacoes , um codigo de linha sem retorno a zero (NRZ) eh um codigo binário no qual os bits 1 sao 
     representados por uma condicao significativa , geralmente uma tensao positiva, enquanto os bits 0 sao representados 

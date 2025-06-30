@@ -1,7 +1,7 @@
 # Codigo feito por Henrique Givisiez dos Santos de matricula 211027563
-from modulador_digital import ModuladorDigital
+from modulador import Modulador
 
-class Bipolar(ModuladorDigital):
+class Bipolar(Modulador):
     """
     O esquema de codificacao bipolar define tres niveis de tensao: positivo, negativo e zero.
     Na codificacao bipolar, o nivel zero representa o bit 0, e o bit 1 eh representado por uma alternancia entre tensoes positivas e negativas.

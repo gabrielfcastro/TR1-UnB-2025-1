@@ -1,8 +1,7 @@
 # Codigo feito por Henrique Givisiez dos Santos de matricula 211027563
-
-from modulador_digital import CamadaFisica
-from modulacoes.nrz_polar import NRZPolar
 from modulacoes.manchester import Manchester
+from modulador import CamadaFisica
+from modulacoes.nrz_polar import NRZPolar
 from modulacoes.bipolar import Bipolar
 
 if __name__ == "__main__":
