@@ -1,7 +1,7 @@
 from camada_enlace.Enquadramento import enquadrador, camada_enlace
 
 class Simulador:
-    def texto_para_bits(texto: str):
+    def texto_para_bits(self, texto: str):
         # Converte uma string de texto em uma lista de bits.
         bits = []
         for chr in texto:
@@ -9,9 +9,9 @@ class Simulador:
             bits.extend(int(b) for b in ascii_bin)
         return bits
     
-    def aplicar_enquadramento(self, tipo_enquadrador: str, dados: list[int]) -> list[int]:
+    def aplicar_enquadramento(self, tipo_enquadrador: str, texto: str) -> list[int]:
         """
-        Aplica o enquadramento nos dados de acordo com o tipo especificado.
+        Aplica o enquadramento nos texto de acordo com o tipo especificado.
         """
         if tipo_enquadrador == "contagem_caracteres":
             enquadrador_inst = camada_enlace.CamadaEnlace(enquadrador.ContagemCaracteres())
@@ -19,8 +19,8 @@ class Simulador:
             enquadrador_inst = camada_enlace.CamadaEnlace(enquadrador.InsercaoBytes())
         else:
             enquadrador_inst = camada_enlace.CamadaEnlace(enquadrador.InsercaoBits())
-
-        bits = self.texto_para_bits(dados)
+            
+        bits = self.texto_para_bits(texto)
         quadros = enquadrador_inst.enquadrar(bits=bits)
         return quadros
 

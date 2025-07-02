@@ -1,4 +1,4 @@
-from enquadrador import Enquadrador
+from .enquadrador import Enquadrador
 
 class CamadaEnlace:
     def __init__(self, enquadrador: Enquadrador):
