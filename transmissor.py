@@ -4,6 +4,9 @@ from gi.repository import Gtk
 from simulador import Simulador
 import socket
 import pickle
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_gtk3agg import FigureCanvasGTK3Agg as FigureCanvas
+import numpy as np
 
 class TransmissorGUI(Gtk.Window):
     def __init__(self):
@@ -37,11 +40,6 @@ class TransmissorGUI(Gtk.Window):
         self.quadro_spin.set_range(1, 2048)
         grid.attach(self.quadro_spin, 1, 0, 1, 1)
 
-        grid.attach(Gtk.Label(label="Tamanho EDC:"), 2, 0, 1, 1)
-        self.edc_spin = Gtk.SpinButton()
-        self.edc_spin.set_range(1, 64)
-        grid.attach(self.edc_spin, 3, 0, 1, 1)
-
         grid.attach(Gtk.Label(label="Enquadramento:"), 0, 1, 1, 1)
         self.enq_combo = Gtk.ComboBoxText()
         for txt in ("Contagem de caracteres","FLAG+Bytes","FLAG+Bits"):
@@ -51,7 +49,7 @@ class TransmissorGUI(Gtk.Window):
 
         grid.attach(Gtk.Label(label="Erro:"), 2, 1, 1, 1)
         self.erro_combo = Gtk.ComboBoxText()
-        for txt in ("Paridade par","CRC-32","Hamming"):
+        for txt in ("Paridade par","CRC-32", "Hamming"):
             self.erro_combo.append_text(txt)
         self.erro_combo.set_active(0)
         grid.attach(self.erro_combo, 3, 1, 1, 1)
@@ -63,14 +61,22 @@ class TransmissorGUI(Gtk.Window):
         self.mod_dig_combo.set_active(0)
         grid.attach(self.mod_dig_combo, 1, 2, 1, 1)
 
-        grid.attach(Gtk.Label(label="Modulação Anal.:"), 2, 2, 1, 1)
-        self.mod_anal_combo = Gtk.ComboBoxText()
+        grid.attach(Gtk.Label(label="Modulação Port.:"), 2, 2, 1, 1)
+        self.mod_port_combo = Gtk.ComboBoxText()
         for txt in ("ASK","FSK","8-QAM"):
-            self.mod_anal_combo.append_text(txt)
-        self.mod_anal_combo.set_active(0)
-        grid.attach(self.mod_anal_combo, 3, 2, 1, 1)
+            self.mod_port_combo.append_text(txt)
+        self.mod_port_combo.set_active(0)
+        grid.attach(self.mod_port_combo, 3, 2, 1, 1)
 
         vbox.pack_start(grid, False, False, 0)
+
+        # Frame do gráfico
+        self.plot_frame = Gtk.Frame(label="Sinal Modulado")
+        self.figure = Figure(figsize=(6, 2), dpi=100)
+        self.canvas = FigureCanvas(self.figure)
+        self.plot_frame.add(self.canvas)
+
+        vbox.pack_start(self.plot_frame, True, True, 0)  # Exibe o gráfico na interface
 
         # ── Entrada de Texto ────────────────────────────────────────────
         inp_frame = Gtk.Frame(label="Mensagem a Transmitir")
@@ -99,31 +105,65 @@ class TransmissorGUI(Gtk.Window):
     def on_simular(self, _):
         texto = self.input_entry.get_text()
 
-        # === 1) Enquadramento ===
-        tipo = {
-            "Contagem de caracteres":"contagem_caracteres",
-            "FLAG+Bytes":"flag_insercao_bytes",
-            "FLAG+Bits":"flag_insercao_bits"
+        # 1) Enquadramento
+        tipo_enq = {
+            "Contagem de caracteres": "contagem_caracteres",
+            "FLAG+Bytes": "flag_insercao_bytes",
+            "FLAG+Bits": "flag_insercao_bits"
         }[self.enq_combo.get_active_text()]
-        quadros = self.simulador.aplicar_enquadramento(tipo, texto)
-        quadros_str = ' '.join(str(b) for b in quadros)
-        self.enlace_lbl.set_text("Enlace:\n" + quadros_str)
+        tamanho_max_quadro = int(self.quadro_spin.get_value())
+        quadros = self.simulador.aplicar_enquadramento(tipo_enq, texto, tamanho_max_quadro)
+        
 
-        # === 2) (Opcional) Camada Física ===
-        # ex: fisica = self.simulador.modular_digital(self.mod_dig_combo.get_active_text(), quadros)
-        self.fisica_lbl.set_text("Física: (a implementar)")
+        # 2) Detecção ou correção de erros
+        tipo_erro = {
+            "Paridade par": "paridade_par",
+            "CRC-32": "crc32",
+            "Hamming": "hamming"
+        }[self.erro_combo.get_active_text()]
+        quadros_com_edc = self.simulador.aplicar_edc(tipo_erro, quadros)
 
-        # === 3) Envia via TCP → Receptor ===
+        # Exibir os quadros da camada de enlace, um por linha
+        quadros_str = '\n'.join(
+            "[" + ' '.join(str(bit) for bit in q) + "]"
+            for q in quadros_com_edc
+        )
+        self.enlace_lbl.set_text("Quadros:\n" + quadros_str)
+
+        # 3) Modulação Digital (banda base)
+        tipo_mod_dig = {
+            "NRZ-Polar": "nrz_polar",
+            "Manchester": "manchester",
+            "Bipolar": "bipolar"
+        }[self.mod_dig_combo.get_active_text()]
+        sinais_modulados = self.simulador.modular_digital(tipo_mod_dig, quadros_com_edc)
+        
+        # # 4) Modulação por portadora
+        # tipo_mod_port = self.mod_port_combo.get_active_text()  # ASK, FSK, 8-QAM
+        # sinais_modulados = self.simulador.modular_por_portadora(tipo_mod_port, sinais_modulados)
+
+        # Gráfico sinais modulados
+        ax = self.figure.clear() or self.figure.add_subplot(111)
+        ax.set_title("Sinal Modulado")
+        ax.set_ylabel("Amplitude")
+        ax.set_xlabel("Tempo (amostras)")
+        ax.plot(sinais_modulados, drawstyle='steps-post')
+
+        self.canvas.draw()
+
+        # 5) Envio via TCP para o receptor
         host = self.host_entry.get_text()
         port = int(self.port_spin.get_value())
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock.connect((host, port))
-            sock.sendall(pickle.dumps(quadros))
+            sock.sendall(pickle.dumps(sinais_modulados))
             sock.close()
-            self.status_lbl.set_text(f"Status: Quadros enviados para {host}:{port}")
+            self.status_lbl.set_text(f"Status: Dados enviados para {host}:{port}")
         except Exception as e:
             self.status_lbl.set_text(f"Erro TCP: {e}")
+
+
 
     def on_limpar(self, _):
         self.input_entry.set_text("")
@@ -131,7 +171,7 @@ class TransmissorGUI(Gtk.Window):
         self.fisica_lbl.set_text("Física: —")
         self.status_lbl.set_text("Status: —")
 
-if __name__ == "__main__":
+if __name__ == "__main__": 
     win = TransmissorGUI()
     win.connect("destroy", Gtk.main_quit)
     win.show_all()

@@ -1,5 +1,5 @@
 # Codigo feito por Henrique Givisiez dos Santos de matricula 211027563
-from detector import Detector
+from .detector import Detector
 
 class CRC(Detector):
     """

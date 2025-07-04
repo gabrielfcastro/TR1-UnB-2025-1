@@ -1,4 +1,4 @@
-from deteccao.detector import Detector
+from ..Deteccao.detector import Detector
 
 class Hamming(Detector):
     """
