@@ -100,7 +100,13 @@ class Hamming(Detector):
             return True
         else:
             return False
-        
+
+    def extrair_dados(self, mensagem: list[int]) -> list[int]:
+        """
+        Corrige a mensagem (caso necessário) e extrai os 7 bits de dados.
+        """
+        return self.corrigir(mensagem)
+
     def corrigir(self, mensagem: list[int]) -> list[int]:
         """
         Recebe um código de 11 bits, corrige o erro caso exista e retorna a mensagem corrigida

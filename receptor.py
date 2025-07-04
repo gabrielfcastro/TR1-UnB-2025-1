@@ -117,8 +117,18 @@ class ReceptorGUI(Gtk.Window):
             bitstream = self.sim.demodular_digital(tipo_mod_dig, sinais_modulados)
 
             # 4) Remoção de EDC e Desenquadramento
-            tipo_enq  = self.enq_combo.get_active_text()
-            tipo_erro = self.erro_combo.get_active_text()
+            tipo_enq  = {
+                "Contagem de caracteres": "contagem_caracteres",
+                "FLAG+Bytes": "flag_insercao_bytes",
+                "FLAG+Bits": "flag_insercao_bits"
+            }[self.enq_combo.get_active_text()]
+
+            tipo_erro = {
+                "Paridade par": "paridade_par",
+                "CRC-32": "crc32",
+                "Hamming": "hamming"
+            }[self.erro_combo.get_active_text()]
+
             quadros_sem_enlace = self.sim.remover_edc_e_desenquadrar(
                 tipo_enq, tipo_erro, bitstream
             )
@@ -134,7 +144,7 @@ class ReceptorGUI(Gtk.Window):
             GLib.idle_add(self.status_label.set_text, f"Erro: {e}")
 
     def update_ui(self, quadros_str, texto):
-        self.recebidos_label.set_text("Quadros recebidos:\n" + "\n".join(quadros_str))
+        self.recebidos_label.set_text("Texto em bits:\n" + "\n".join(quadros_str))
         self.texto_label.set_text("Texto recebido: " + texto)
         self.status_label.set_text("Status: Mensagem recebida")
 

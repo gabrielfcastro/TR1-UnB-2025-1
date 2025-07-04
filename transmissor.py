@@ -111,9 +111,6 @@ class TransmissorGUI(Gtk.Window):
             "FLAG+Bytes": "flag_insercao_bytes",
             "FLAG+Bits": "flag_insercao_bits"
         }[self.enq_combo.get_active_text()]
-        tamanho_max_quadro = int(self.quadro_spin.get_value())
-        quadros = self.simulador.aplicar_enquadramento(tipo_enq, texto, tamanho_max_quadro)
-        
 
         # 2) Detecção ou correção de erros
         tipo_erro = {
@@ -121,8 +118,10 @@ class TransmissorGUI(Gtk.Window):
             "CRC-32": "crc32",
             "Hamming": "hamming"
         }[self.erro_combo.get_active_text()]
-        quadros_com_edc = self.simulador.aplicar_edc(tipo_erro, quadros)
-
+        
+        tamanho_max_quadro = int(self.quadro_spin.get_value())
+        quadros_com_edc = self.simulador.aplicar_enquadramento(tipo_enq, texto, tamanho_max_quadro, tipo_erro)
+        
         # Exibir os quadros da camada de enlace, um por linha
         quadros_str = '\n'.join(
             "[" + ' '.join(str(bit) for bit in q) + "]"

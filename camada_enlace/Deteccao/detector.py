@@ -10,6 +10,10 @@ class Detector(ABC):
     def verificar(self, mensagem: list[int]) -> bool:
         pass
 
+    @abstractmethod
+    def extrair_dados(self, bits: list[int]) -> list[int]:
+        pass
+
 class CamadaEnlace:
     def __init__(self, detector: Detector):
         self.detector = detector
@@ -19,3 +23,14 @@ class CamadaEnlace:
 
     def verificar(self, mensagem: list[int]) -> bool:
         return self.detector.verificar(mensagem)
+
+    def extrair_dados(self, bits: list[int]) -> list[int]:
+        """
+        Extrai os dados da mensagem, removendo o bit de paridade ou EDC.
+        Args:
+        bits (list[int]): Lista de bits com o bit de paridade ou EDC no final.
+
+        Returns:
+        list[int]: Lista de bits sem o bit de paridade ou EDC.
+        """
+        return self.detector.extrair_dados(bits)

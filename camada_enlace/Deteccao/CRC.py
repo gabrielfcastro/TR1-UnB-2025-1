@@ -70,3 +70,10 @@ class CRC(Detector):
 
         # Se o resultado for 0, o CRC eh valido
         return (dados & ((1 << self.GRAU) - 1)) == 0
+
+    def extrair_dados(self, mensagem: list[int]) -> list[int]:
+        """
+        Remove os 32 bits finais de CRC da mensagem.
+        Assumimos que a verificação já foi feita.
+        """
+        return mensagem[:-self.GRAU]

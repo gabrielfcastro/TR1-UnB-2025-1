@@ -13,26 +13,41 @@ class Simulador:
             bits.extend(int(b) for b in ascii_bin)
         return bits
     
-    def aplicar_enquadramento(self, tipo_enquadrador: str, texto: str, tamanho_max_quadros: int) -> list[int]:
-        """
-        Aplica o enquadramento nos texto de acordo com o tipo especificado.
-        """
+    def aplicar_enquadramento(self, tipo_enquadrador: str, texto: str, tamanho_max_quadros: int, tipo_edc: str) -> list[list[int]]:
+        # 1. Seleciona enquadrador
         if tipo_enquadrador == "contagem_caracteres":
             enquadrador_inst = camada_enlace.CamadaEnlace(enquadrador.ContagemCaracteres())
         elif tipo_enquadrador == "flag_insercao_bytes":
             enquadrador_inst = camada_enlace.CamadaEnlace(enquadrador.InsercaoBytes())
         else:
             enquadrador_inst = camada_enlace.CamadaEnlace(enquadrador.InsercaoBits())
-            
+
         bits = self.texto_para_bits(texto)
         quadros = []
-        for i in range(0, len(bits), tamanho_max_quadros):
-            bits_por_quadro = bits[i:i + tamanho_max_quadros]
-            quadro_atual = enquadrador_inst.enquadrar(bits=bits_por_quadro)
-            quadros.append(quadro_atual)
+
+        # 2. Se Hamming, ignora o tamanho do quadro e divide em blocos de 7
+        if tipo_edc == "hamming":
+            bloco_tamanho = 7
+        else:
+            bloco_tamanho = tamanho_max_quadros
+
+        for i in range(0, len(bits), bloco_tamanho):
+            bloco = bits[i:i + bloco_tamanho]
+            
+            # ⚠️ Hamming exige exatamente 7 bits
+            if tipo_edc == "hamming" and len(bloco) < 7:
+                # Padding com 0s (opcional)
+                bloco += [0] * (7 - len(bloco))
+
+            bloco_com_edc = self.aplicar_edc(tipo_edc, bloco)
+            quadro = enquadrador_inst.enquadrar(bloco_com_edc)
+            quadros.append(quadro)
+
         return quadros
 
-    def aplicar_edc(self, tipo_edc: str, quadros: list[list[int]]) -> list[int]:
+    
+
+    def aplicar_edc(self, tipo_edc: str, bloco: list[int]) -> list[int]:
         """
         Aplica a detecção ou correção de erros nos quadros de acordo com o tipo especificado.
         """
@@ -43,13 +58,7 @@ class Simulador:
         else:
             edc_inst = detector.CamadaEnlace(hamming.Hamming())
 
-        quadros_com_edc = []
-        # Aplica EDC em cada quadro
-        for quadro in quadros:
-            quadro_atual = edc_inst.transmitir(quadro)
-            quadros_com_edc.append(quadro_atual)
-        
-        return quadros_com_edc
+        return edc_inst.transmitir(bloco)
     
     def modular_digital(self, tipo_modulacao: str, quadros: list[list[int]]) -> list[int]:
         """        
@@ -90,6 +99,32 @@ class Simulador:
         
         return bitstream
 
+    def extrair_quadros_do_bitstream(self, tipo_enq: str, bitstream: list[int]) -> list[list[int]]:
+        if tipo_enq == "contagem_caracteres":
+            i = 0
+            quadros = []
+            while i + 8 <= len(bitstream):
+                tamanho = int("".join(map(str, bitstream[i:i+8])), 2)
+                fim = i + 8 + tamanho
+                if fim > len(bitstream): break
+                quadros.append(bitstream[i:fim])
+                i = fim
+            return quadros
+
+        elif tipo_enq in ["flag_insercao_bytes", "flag_insercao_bits"]:
+            FLAG = [0,1,1,1,1,1,1,0]
+            quadros = []
+            i = 0
+            while i < len(bitstream):
+                try:
+                    start = bitstream.index(FLAG, i) # procura o início do quadro (o método index retorna o índice da primeira ocorrência)
+                    end = bitstream.index(FLAG, start + 8) # procura o fim do quadro (a partir do índice do início + 8 para evitar pegar a mesma FLAG)
+                    quadros.append(bitstream[start:end+8])
+                    i = end + 8
+                except ValueError:
+                    break
+            return quadros
+
     def remover_edc_e_desenquadrar(self, tipo_enq: str, tipo_erro: str, bitstream: list[int]) -> list[list[int]]:
         """
         Remove EDC e desenquadra o bitstream de acordo com o tipo especificado.
@@ -110,18 +145,25 @@ class Simulador:
 
         # Desenquadra e remove EDC
         quadros_desenquadrados = []
-        for quadro in enquadrador_inst.desenquadrar(bitstream):
-            quadro_sem_edc = edc_inst.verificar(quadro)
-            if quadro_sem_edc is not None:
-                quadros_desenquadrados.append(quadro_sem_edc)
+        quadros_crus = self.extrair_quadros_do_bitstream(tipo_enq, bitstream)
 
+        for quadro in quadros_crus:
+            desenquadrado = enquadrador_inst.desenquadrar(quadro)
+            if edc_inst.verificar(desenquadrado):
+                dados = edc_inst.extrair_dados(desenquadrado)
+                quadros_desenquadrados.append(dados)
+
+        
         return quadros_desenquadrados
 
     def bits_para_texto(self, quadros: list[list[int]]) -> str:
         texto = ""
+        bistream = []
         for quadro in quadros:
-            for i in range(0, len(quadro), 8):
-                byte = quadro[i:i+8]
-                if len(byte) < 8: break
-                texto += chr(int("".join(str(b) for b in byte), 2))
+            bistream.extend(quadro)
+        for i in range(0, len(bistream), 8):
+            byte = bistream[i:i+8]
+            if len(byte) < 8: break
+            texto += chr(int("".join(str(b) for b in byte), 2))
+
         return texto
