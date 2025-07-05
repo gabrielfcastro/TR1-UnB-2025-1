@@ -1,5 +1,5 @@
-from enquadrador import ContagemCaracteres, InsercaoBytes, InsercaoBits
-from camada_enlace import CamadaEnlace
+from enquadramento.enquadrador import ContagemCaracteres, InsercaoBytes, InsercaoBits
+from enquadramento.camada_enlace import CamadaEnlace
 
 if __name__ == "__main__":
   bits = [0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0]

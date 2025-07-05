@@ -1,7 +1,6 @@
-# Codigo feito por Henrique Givisiez dos Santos de matricula 211027563
-from bit_paridade import BitParidade
-from CRC import CRC
-from detector import CamadaEnlace
+from deteccao.bit_paridade import BitParidade
+from deteccao.detector import CamadaEnlace
+from deteccao.CRC import CRC
 
 if __name__ == "__main__":
     bits = [0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0]

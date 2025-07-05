@@ -1,5 +1,4 @@
-# Codigo feito por Henrique Givisiez dos Santos de matricula 211027563
-from detector import Detector
+from .detector import Detector
 
 class BitParidade(Detector):
     """
@@ -47,3 +46,15 @@ class BitParidade(Detector):
 
         # Retorna True se a quantidade for par (paridade válida), False se for ímpar
         return total_uns % 2 == 0
+
+
+    def extrair_dados(self, bits: list[int]) -> list[int]:
+        """
+        Extrai os dados da mensagem, removendo o bit de paridade.
+        Args:
+        bits (list[int]): Lista de bits com o bit de paridade no final.
+
+        Returns:
+        list[int]: Lista de bits sem o bit de paridade.
+        """
+        return bits[:-1]  # remove último bit (paridade)

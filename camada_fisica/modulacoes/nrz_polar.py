@@ -1,5 +1,5 @@
 # Codigo feito por Henrique Givisiez dos Santos de matricula 211027563
-from modulador import Modulador
+from ..modulador import Modulador
 
 class NRZPolar(Modulador):
     """
