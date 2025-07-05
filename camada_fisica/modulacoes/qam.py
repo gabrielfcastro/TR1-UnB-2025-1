@@ -1,4 +1,4 @@
-from modulador import Modulador
+from camada_fisica.modulador import Modulador
 import numpy as np
 
 class QAM8(Modulador):

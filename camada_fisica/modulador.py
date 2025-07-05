@@ -1,4 +1,3 @@
-# Codigo feito por Henrique Givisiez dos Santos de matricula 211027563
 # Bibliotecas para auxiliar a implementacao de POO 
 # Para mais informacoes, consultar: (https://docs-python-org.translate.goog/3/library/abc.html?_x_tr_sl=en&_x_tr_tl=pt&_x_tr_hl=pt&_x_tr_pto=tc)
 from abc import ABC, abstractmethod

@@ -1,3 +1,18 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Simulador
+
+Este módulo implementa a lógica de simulação das camadas de enlace e física
+para transmissão e recepção de dados. Ele inclui:
+- Conversão entre texto e bits
+- Enquadramento e desenquadramento
+- Detecção e correção de erros (EDC)
+- Modulação e demodulação digital
+- Interfaces com os módulos ASK, FSK, QAM, NRZ, Manchester, Bipolar
+"""
+
+# Importações das camadas física e de enlace
 from camada_fisica.modulacoes import nrz_polar, manchester, bipolar
 from camada_enlace.Enquadramento import enquadrador, camada_enlace
 from camada_enlace.Deteccao import detector, bit_paridade, CRC
@@ -6,15 +21,24 @@ from camada_enlace.correcao import hamming
 
 class Simulador:
     def texto_para_bits(self, texto: str):
-        # Converte uma string de texto em uma lista de bits.
+        """
+        Converte um texto em uma lista de bits (8 bits por caractere ASCII).
+        """
         bits = []
         for chr in texto:
-            ascii_bin = format(ord(chr), '08b')  # 8 bits por caractere
+            ascii_bin = format(ord(chr), '08b')  # codifica cada caractere em 8 bits
             bits.extend(int(b) for b in ascii_bin)
         return bits
-    
+
     def aplicar_enquadramento(self, tipo_enquadrador: str, texto: str, tamanho_max_quadros: int, tipo_edc: str) -> list[list[int]]:
-        # 1. Seleciona enquadrador
+        """
+        Aplica enquadramento e EDC (detecção/correção de erros) aos bits da mensagem.
+        Divide a mensagem em blocos e aplica o enquadramento selecionado.
+
+        - tipo_enquadrador: tipo de enquadramento (contagem_caracteres, flag_insercao_bytes, flag_insercao_bits)
+        - tipo_edc: paridade_par, crc32, hamming
+        """
+        # 1. Instancia o enquadrador apropriado
         if tipo_enquadrador == "contagem_caracteres":
             enquadrador_inst = camada_enlace.CamadaEnlace(enquadrador.ContagemCaracteres())
         elif tipo_enquadrador == "flag_insercao_bytes":
@@ -25,31 +49,26 @@ class Simulador:
         bits = self.texto_para_bits(texto)
         quadros = []
 
-        # 2. Se Hamming, ignora o tamanho do quadro e divide em blocos de 7
-        if tipo_edc == "hamming":
-            bloco_tamanho = 7
-        else:
-            bloco_tamanho = tamanho_max_quadros
+        # 2. Divide a mensagem em blocos
+        bloco_tamanho = 7 if tipo_edc == "hamming" else tamanho_max_quadros
 
         for i in range(0, len(bits), bloco_tamanho):
             bloco = bits[i:i + bloco_tamanho]
-            
-            # ⚠️ Hamming exige exatamente 7 bits
+
+            # Preenchimento se o bloco estiver incompleto (apenas para Hamming)
             if tipo_edc == "hamming" and len(bloco) < 7:
-                # Padding com 0s (opcional)
                 bloco += [0] * (7 - len(bloco))
 
+            # 3. Aplica EDC e enquadramento
             bloco_com_edc = self.aplicar_edc(tipo_edc, bloco)
             quadro = enquadrador_inst.enquadrar(bloco_com_edc)
             quadros.append(quadro)
 
         return quadros
 
-    
-
     def aplicar_edc(self, tipo_edc: str, bloco: list[int]) -> list[int]:
         """
-        Aplica a detecção ou correção de erros nos quadros de acordo com o tipo especificado.
+        Aplica o método de detecção ou correção de erros sobre um bloco de bits.
         """
         if tipo_edc == "paridade_par":
             edc_inst = detector.CamadaEnlace(bit_paridade.BitParidade())
@@ -59,34 +78,29 @@ class Simulador:
             edc_inst = detector.CamadaEnlace(hamming.Hamming())
 
         return edc_inst.transmitir(bloco)
-    
+
     def modular_digital(self, tipo_modulacao: str, quadros: list[list[int]]) -> list[int]:
-        """        
-        Aplica a modulação digital nos quadros de acordo com o tipo especificado.
+        """
+        Aplica a modulação digital (baseband) sobre os bits dos quadros.
+        - tipo_modulacao: "nrz_polar", "manchester", "bipolar"
         """
         sinais_digitais = []
         for quadro in quadros:
             sinais_digitais.extend(quadro)
-        
+
         if tipo_modulacao == "nrz_polar":
             mod_dig_inst = CamadaFisica(nrz_polar.NRZPolar())
         elif tipo_modulacao == "manchester":
             mod_dig_inst = CamadaFisica(manchester.Manchester())
         else:
             mod_dig_inst = CamadaFisica(bipolar.Bipolar())
-        
+
         sinais_modulados = mod_dig_inst.transmitir(sinais_digitais)
         return sinais_modulados
-    
-    def demodular_portadora(self, tipo: str, sinais):
-        # ex.: solicitação ao Modulador ASK, FSK ou QAM8
-        # retorna np.ndarray ou lista de bits
-        # implemente a lógica inversa da `modular_por_portadora`
-        pass
 
     def demodular_digital(self, tipo: str, sinais: list[int]) -> list[int]:
         """
-        Demodula os sinais digitais de acordo com o tipo especificado.
+        Realiza a demodulação digital (converte sinal → bits).
         """
         if tipo == "nrz_polar":
             mod_dig_inst = CamadaFisica(nrz_polar.NRZPolar())
@@ -94,12 +108,14 @@ class Simulador:
             mod_dig_inst = CamadaFisica(manchester.Manchester())
         else:
             mod_dig_inst = CamadaFisica(bipolar.Bipolar())
-        
+
         bitstream = mod_dig_inst.receber(sinais)
-        
         return bitstream
 
     def extrair_quadros_do_bitstream(self, tipo_enq: str, bitstream: list[int]) -> list[list[int]]:
+        """
+        Extrai os quadros do bitstream, baseado no protocolo de enquadramento.
+        """
         if tipo_enq == "contagem_caracteres":
             i = 0
             quadros = []
@@ -117,8 +133,8 @@ class Simulador:
             i = 0
             while i < len(bitstream):
                 try:
-                    start = bitstream.index(FLAG, i) # procura o início do quadro (o método index retorna o índice da primeira ocorrência)
-                    end = bitstream.index(FLAG, start + 8) # procura o fim do quadro (a partir do índice do início + 8 para evitar pegar a mesma FLAG)
+                    start = bitstream.index(FLAG, i)
+                    end = bitstream.index(FLAG, start + 8)
                     quadros.append(bitstream[start:end+8])
                     i = end + 8
                 except ValueError:
@@ -127,7 +143,7 @@ class Simulador:
 
     def remover_edc_e_desenquadrar(self, tipo_enq: str, tipo_erro: str, bitstream: list[int]) -> list[list[int]]:
         """
-        Remove EDC e desenquadra o bitstream de acordo com o tipo especificado.
+        Remove o enquadramento e o EDC dos quadros recebidos.
         """
         if tipo_enq == "contagem_caracteres":
             enquadrador_inst = camada_enlace.CamadaEnlace(enquadrador.ContagemCaracteres())
@@ -143,7 +159,6 @@ class Simulador:
         else:
             edc_inst = detector.CamadaEnlace(hamming.Hamming())
 
-        # Desenquadra e remove EDC
         quadros_desenquadrados = []
         quadros_crus = self.extrair_quadros_do_bitstream(tipo_enq, bitstream)
 
@@ -153,14 +168,17 @@ class Simulador:
                 dados = edc_inst.extrair_dados(desenquadrado)
                 quadros_desenquadrados.append(dados)
 
-        
         return quadros_desenquadrados
 
     def bits_para_texto(self, quadros: list[list[int]]) -> str:
+        """
+        Converte quadros de bits de volta para uma string de texto.
+        """
         texto = ""
         bistream = []
         for quadro in quadros:
             bistream.extend(quadro)
+
         for i in range(0, len(bistream), 8):
             byte = bistream[i:i+8]
             if len(byte) < 8: break

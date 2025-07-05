@@ -1,4 +1,3 @@
-# Codigo feito por Henrique Givisiez dos Santos de matricula 211027563
 from deteccao.bit_paridade import BitParidade
 from deteccao.detector import CamadaEnlace
 from deteccao.CRC import CRC
