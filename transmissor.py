@@ -117,7 +117,7 @@ class TransmissorGUI(Gtk.Window):
         self.host_entry = Gtk.Entry(); self.host_entry.set_text('localhost')
         grid.attach(self.host_entry, 1, 7, 1, 1)
         grid.attach(Gtk.Label(label="Porta:"), 2, 7, 1, 1)
-        self.port_spin = Gtk.SpinButton(adjustment=Gtk.Adjustment(5000, 1, 65535, 1, 10, 0), climb_rate=1, digits=0)
+        self.port_spin = Gtk.SpinButton(adjustment=Gtk.Adjustment(50007, 1, 65535, 1, 10, 0), climb_rate=1, digits=0)
         grid.attach(self.port_spin, 3, 7, 1, 1)
 
         # Label de status da conexão
