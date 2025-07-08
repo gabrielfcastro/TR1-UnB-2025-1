@@ -72,7 +72,7 @@ class Simulador:
         """
         if tipo_edc == "paridade_par":
             edc_inst = detector.CamadaEnlace(bit_paridade.BitParidade())
-        elif tipo_edc == "crc32":
+        elif tipo_edc == "crc_32":
             edc_inst = detector.CamadaEnlace(CRC.CRC())
         else:
             edc_inst = detector.CamadaEnlace(hamming.Hamming())
@@ -112,6 +112,16 @@ class Simulador:
         bitstream = mod_dig_inst.receber(sinais)
         return bitstream
 
+    def encontrar_sublista(self, lista: list[int], sublista: list[int], inicio: int = 0) -> int:
+        """
+        Retorna o índice da primeira ocorrência de sublista em lista a partir de 'inicio'.
+        Retorna -1 se não for encontrada.
+        """
+        for i in range(inicio, len(lista) - len(sublista) + 1):
+            if lista[i:i + len(sublista)] == sublista:
+                return i
+        return -1
+
     def extrair_quadros_do_bitstream(self, tipo_enq: str, bitstream: list[int]) -> list[list[int]]:
         """
         Extrai os quadros do bitstream, baseado no protocolo de enquadramento.
@@ -127,24 +137,35 @@ class Simulador:
                 i = fim
             return quadros
 
+
         elif tipo_enq in ["flag_insercao_bytes", "flag_insercao_bits"]:
             FLAG = [0,1,1,1,1,1,1,0]
             quadros = []
             i = 0
+
             while i < len(bitstream):
-                try:
-                    start = bitstream.index(FLAG, i)
-                    end = bitstream.index(FLAG, start + 8)
-                    quadros.append(bitstream[start:end+8])
-                    i = end + 8
-                except ValueError:
+                start = self.encontrar_sublista(bitstream, FLAG, i)
+                if start == -1:
                     break
+
+                end = self.encontrar_sublista(bitstream, FLAG, start + len(FLAG))
+                if end == -1:
+                    break
+
+                # Conteúdo entre as flags
+                quadro = bitstream[start:end+8]
+                quadros.append(quadro)
+
+                # Próxima busca começa após a segunda flag
+                i = end + len(FLAG)
             return quadros
 
     def remover_edc_e_desenquadrar(self, tipo_enq: str, tipo_erro: str, bitstream: list[int]) -> list[list[int]]:
         """
         Remove o enquadramento e o EDC dos quadros recebidos.
         """
+        # print(bitstream)
+
         if tipo_enq == "contagem_caracteres":
             enquadrador_inst = camada_enlace.CamadaEnlace(enquadrador.ContagemCaracteres())
         elif tipo_enq == "flag_insercao_bytes":
@@ -154,7 +175,7 @@ class Simulador:
 
         if tipo_erro == "paridade_par":
             edc_inst = detector.CamadaEnlace(bit_paridade.BitParidade())
-        elif tipo_erro == "crc32":
+        elif tipo_erro == "crc_32":
             edc_inst = detector.CamadaEnlace(CRC.CRC())
         else:
             edc_inst = detector.CamadaEnlace(hamming.Hamming())
@@ -162,6 +183,7 @@ class Simulador:
         quadros_desenquadrados = []
         quadros_crus = self.extrair_quadros_do_bitstream(tipo_enq, bitstream)
 
+        print(quadros_crus)
         for quadro in quadros_crus:
             desenquadrado = enquadrador_inst.desenquadrar(quadro)
             if edc_inst.verificar(desenquadrado):
