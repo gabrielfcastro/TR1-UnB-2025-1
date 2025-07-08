@@ -1,7 +1,7 @@
-from modulacoes.qam import QAM8
+from camada_fisica.modulacoes.qam import QAM8
 import matplotlib.pyplot as plt
-from modulacoes.ask import ASK
-from modulacoes.fsk import FSK
+from camada_fisica.modulacoes.ask import ASK
+from camada_fisica.modulacoes.fsk import FSK
 import numpy as np
 
 def testar_ask(bits, freq, amostras):

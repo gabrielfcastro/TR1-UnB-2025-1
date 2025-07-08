@@ -1,5 +1,5 @@
 # Codigo feito por Gabriel Francisco de Oliveira Castro de matricula 202066571
-from correcao.hamming import Hamming
+from camada_enlace.correcao.hamming import Hamming
 
 # --- Bloco de Teste ---
 if __name__ == "__main__":
